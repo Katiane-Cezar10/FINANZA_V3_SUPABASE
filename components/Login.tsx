@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { supabase } from '../services/supabase';
 import { Mail, Lock, Loader2, ArrowRight, Sparkles, AlertCircle, LayoutDashboard } from 'lucide-react';
@@ -16,10 +15,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabase) {
-      setError("O serviço de autenticação não está configurado corretamente. Verifique as variáveis de ambiente.");
-      return;
-    }
 
     setLoading(true);
     setError(null);
@@ -30,7 +25,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           email,
           password,
         });
+
         if (signUpError) throw signUpError;
+
         if (data.user && !data.session) {
           setError("Cadastro realizado! Verifique seu e-mail para confirmar a conta.");
         } else if (data.session) {
@@ -41,8 +38,12 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           email,
           password,
         });
+
         if (signInError) throw signInError;
-        if (data.session) onLoginSuccess(data.session);
+
+        if (data.session) {
+          onLoginSuccess(data.session);
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Erro ao processar autenticação.');
@@ -53,7 +54,6 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 p-6 relative overflow-hidden">
-      {/* Luzes de fundo decorativas */}
       <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-indigo-600/10 rounded-full blur-[120px]"></div>
 
@@ -72,7 +72,9 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
               <div className={`p-4 rounded-2xl flex items-center gap-3 text-xs font-bold animate-in slide-in-from-top-2 ${
-                error.includes('Cadastro realizado') ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400' : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
+                error.includes('Cadastro realizado')
+                  ? 'bg-emerald-500/10 border border-emerald-500/20 text-emerald-400'
+                  : 'bg-rose-500/10 border border-rose-500/20 text-rose-400'
               }`}>
                 <AlertCircle size={16} />
                 {error}
@@ -81,7 +83,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
             <div className="space-y-4">
               <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={18} />
+                <Mail
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors"
+                  size={18}
+                />
                 <input
                   type="email"
                   required
@@ -93,7 +98,10 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
               </div>
 
               <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors" size={18} />
+                <Lock
+                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-blue-500 transition-colors"
+                  size={18}
+                />
                 <input
                   type="password"
                   required
@@ -130,7 +138,7 @@ const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             >
               {isSignUp ? 'Já tem uma conta? Entrar' : 'Não tem conta? Cadastre-se'}
             </button>
-            
+
             <div className="flex items-center gap-2 justify-center text-[10px] text-slate-700 font-bold uppercase tracking-widest pt-4">
               <Sparkles size={12} className="text-blue-600" />
               <span>Protegido por Finanza Cloud</span>

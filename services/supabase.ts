@@ -1,15 +1,15 @@
-
 import { createClient } from '@supabase/supabase-js';
 
-// Tenta obter as chaves de ambos os padrões (VITE e padrão do sistema)
-const supabaseUrl = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL || '';
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = (supabaseUrl && supabaseAnonKey) 
-  ? createClient(supabaseUrl, supabaseAnonKey) 
-  : null;
+console.log("SUPABASE URL:", supabaseUrl);
+console.log("SUPABASE KEY:", supabaseAnonKey);
 
-// Log silencioso apenas para depuração, sem poluir o console como erro fatal
-if (!supabase) {
-  console.debug("Finanza: Supabase não configurado. O sistema operará em modo demonstração local.");
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error("❌ Supabase NÃO configurado");
+} else {
+  console.log("✅ Supabase configurado corretamente");
 }
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

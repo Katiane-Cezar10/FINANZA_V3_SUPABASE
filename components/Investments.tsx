@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Asset, AssetType, AllocationGoals, PaymentFrequency } from '../types';
 import { Plus, Shield, Calendar, Percent, Landmark, Sparkles, Edit2, Trash2, Copy, History, ArrowUp, ArrowDown, Check, AlertTriangle } from 'lucide-react';
 import ChatImportModal from './ChatImportModal';
-import { formatCurrency } from '../constants';
 
 interface InvestmentsProps {
   assets: Asset[];
@@ -29,17 +28,14 @@ const Investments: React.FC<InvestmentsProps> = ({
     const today = new Date();
     const allocDate = new Date(asset.allocationDate);
     const months = (today.getFullYear() - allocDate.getFullYear()) * 12 + (today.getMonth() - allocDate.getMonth());
-    if (months <= 0) return asset.investedAmount || 0;
+    if (months <= 0) return asset.investedAmount;
     
-    const rate = asset.yieldRate || 0;
-    const invested = asset.investedAmount || 0;
-
-    const monthlyRate = Math.pow(1 + rate / 100, 1 / 12) - 1;
+    const monthlyRate = Math.pow(1 + asset.yieldRate / 100, 1 / 12) - 1;
     const isCompound = asset.paymentFrequency === PaymentFrequency.AT_MATURITY;
     
     return isCompound 
-      ? invested * Math.pow(1 + monthlyRate, months)
-      : invested * (1 + monthlyRate * months);
+      ? asset.investedAmount * Math.pow(1 + monthlyRate, months)
+      : asset.investedAmount * (1 + monthlyRate * months);
   };
 
   const fixedIncome = assets.filter(a => a.type === AssetType.FIXED_INCOME);
@@ -80,12 +76,12 @@ const Investments: React.FC<InvestmentsProps> = ({
               <div className="mt-4">
                 <span className="text-xs text-slate-500">Patrimônio Atual</span>
                 <div className="text-xl font-black text-white">
-                  {formatCurrency(currentVal)}
+                  R$ {currentVal.toLocaleString('pt-BR')}
                 </div>
               </div>
 
               <div className="mt-2 text-sm text-slate-400">
-                Investido: {formatCurrency(asset.investedAmount)}
+                Investido: R$ {asset.investedAmount.toLocaleString('pt-BR')}
               </div>
             </div>
           );

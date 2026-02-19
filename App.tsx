@@ -1,3 +1,4 @@
+// mesmo início de imports
 import React, { useState, useRef, useEffect } from 'react';
 import TickerBar from './components/TickerBar';
 import Dashboard from './components/Dashboard';
@@ -39,38 +40,27 @@ const App: React.FC = () => {
     crypto: 20
   });
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [prefilledAsset, setPrefilledAsset] = useState<Partial<Asset> | undefined>(undefined);
-  
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [prefilledAsset, setPrefilledAsset] = useState<Partial<Asset>>();
 
   // =========================
-  // BUSCAR ATIVOS DO SUPABASE
+  // BUSCAR ATIVOS
   // =========================
   const fetchAssets = async (userId: string) => {
-    if (!supabase || !userId) return;
-
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("assets")
       .select("*")
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false });
+      .eq("user_id", userId);
 
-    if (error) {
-      console.error("Erro ao buscar ativos:", error);
-      return;
-    }
+    if (!data) return;
 
-    const formatted: Asset[] = (data || []).map((item: any) => ({
+    const formatted: Asset[] = data.map((item: any) => ({
       id: item.id,
       name: item.name,
       type: item.type,
       subtype: item.category,
-
       investedAmount: item.invested_amount || 0,
       yieldRate: item.annual_rate || 0,
       dividendYield: item.dividend_yield || 0,
-
       allocationDate: item.allocation_date,
       maturityDate: item.maturity_date,
       notes: item.notes || "",
@@ -80,181 +70,120 @@ const App: React.FC = () => {
   };
 
   // =========================
-  // MONITORAR LOGIN
+  // LOGIN
   // =========================
   useEffect(() => {
-    if (!supabase) return;
-
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-
       if (session?.user) {
-        const name = session.user.email?.split('@')[0] || 'Usuário';
-        setUserData(prev => ({ ...prev, name }));
         fetchAssets(session.user.id);
       }
     });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-
-      if (session?.user) {
-        const name = session.user.email?.split('@')[0] || 'Usuário';
-        setUserData(prev => ({ ...prev, name }));
-        fetchAssets(session.user.id);
-      }
-    });
-
-    return () => subscription.unsubscribe();
   }, []);
 
   const handleLogout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    }
+    await supabase.auth.signOut();
   };
 
   // =========================
-  // SALVAR ATIVO NO SUPABASE
+  // SALVAR ATIVO
   // =========================
   const handleSaveAsset = async (asset: Asset) => {
-    if (!supabase || !session?.user) return;
+    if (!session?.user) return;
 
-    const { error } = await supabase.from("assets").insert([
+    await supabase.from("assets").insert([
       {
         user_id: session.user.id,
         name: asset.name,
         type: asset.type,
-        category: asset.subtype || null,
-
-        invested_amount: asset.investedAmount || 0,
-        current_value: asset.investedAmount || 0,
-
-        annual_rate: asset.yieldRate || 0,
-        dividend_yield: asset.dividendYield || 0,
-
-        allocation_date: asset.allocationDate || null,
-        maturity_date: asset.maturityDate || null,
-
-        notes: asset.notes || null,
+        category: asset.subtype,
+        invested_amount: asset.investedAmount,
+        annual_rate: asset.yieldRate,
+        dividend_yield: asset.dividendYield,
+        allocation_date: asset.allocationDate,
+        maturity_date: asset.maturityDate,
       },
     ]);
 
-    if (error) {
-      console.error("Erro ao salvar ativo:", error);
-      alert("Erro ao salvar ativo.");
-      return;
-    }
-
-    await fetchAssets(session.user.id);
-
+    fetchAssets(session.user.id);
     setIsAssetModalOpen(false);
-    setPrefilledAsset(undefined);
   };
 
   const handleDeleteAsset = async (id: string) => {
-    if (!supabase || !session?.user) return;
-
-    if (!confirm('Tem certeza que deseja excluir este ativo?')) return;
-
-    const { error } = await supabase
-      .from("assets")
-      .delete()
-      .eq("id", id)
-      .eq("user_id", session.user.id);
-
-    if (error) {
-      console.error("Erro ao excluir ativo:", error);
-      return;
-    }
-
+    await supabase.from("assets").delete().eq("id", id);
     fetchAssets(session.user.id);
   };
 
   const handleDuplicateAsset = (asset: Asset) => {
     const duplicated: Asset = {
       ...asset,
-      id: Math.random().toString(36).substr(2, 9),
+      id: Math.random().toString(36),
       name: `${asset.name} (Cópia)`
     };
     handleSaveAsset(duplicated);
-  };
-
-  const handleOpenAssetModal = (initialData?: Partial<Asset>) => {
-    setPrefilledAsset(initialData);
-    setIsAssetModalOpen(true);
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setUserData(prev => ({ ...prev, photo: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   if (!session) {
     return <Login onLoginSuccess={(sess) => setSession(sess)} />;
   }
 
+  const navItems = [
+    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
+    { id: 'investments', icon: Wallet, label: 'Investimentos' },
+    { id: 'simulator', icon: Calculator, label: 'Simulador' },
+    { id: 'goals', icon: Target, label: 'Metas' },
+    { id: 'reports', icon: BarChart2, label: 'Relatórios' },
+  ];
+
   const renderView = () => {
     switch (currentView) {
       case 'dashboard': return <Dashboard assets={assets} goals={goals} privacyMode={privacyMode} />;
-      case 'investments': return (
-        <Investments 
-          assets={assets} 
-          allocationGoals={allocationGoals}
-          onAddClick={() => handleOpenAssetModal()} 
-          onAIImport={(data) => handleOpenAssetModal(data)}
-          onEditAsset={(asset) => handleOpenAssetModal(asset)}
-          onDeleteAsset={handleDeleteAsset}
-          onDuplicateAsset={handleDuplicateAsset}
-        />
-      );
+      case 'investments':
+        return (
+          <Investments
+            assets={assets}
+            allocationGoals={allocationGoals}
+            onAddClick={() => setIsAssetModalOpen(true)}
+            onAIImport={(data) => setPrefilledAsset(data)}
+            onEditAsset={(asset) => setPrefilledAsset(asset)}
+            onDeleteAsset={handleDeleteAsset}
+            onDuplicateAsset={handleDuplicateAsset}
+          />
+        );
       case 'simulator': return <Simulator />;
-      case 'goals': return (
-        <Goals 
-          goals={goals} 
-          assets={assets} 
-          allocationGoals={allocationGoals} 
-          setAllocationGoals={setAllocationGoals}
-          setGoals={setGoals}
-        />
-      );
+      case 'goals': return <Goals goals={goals} assets={assets} allocationGoals={allocationGoals} setAllocationGoals={setAllocationGoals} setGoals={setGoals} />;
       case 'reports': return <Reports assets={assets} />;
-      case 'settings': return (
-        <SettingsView 
-          theme={theme} 
-          setTheme={setTheme} 
-          privacyMode={privacyMode} 
-          setPrivacyMode={setPrivacyMode} 
-        />
-      );
+      case 'settings': return <SettingsView theme={theme} setTheme={setTheme} privacyMode={privacyMode} setPrivacyMode={setPrivacyMode} />;
       default: return <Dashboard assets={assets} goals={goals} privacyMode={privacyMode} />;
     }
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <TickerBar />
+    <div className="min-h-screen bg-slate-950 flex text-white">
+      <aside className="w-64 bg-slate-900 p-6 space-y-4">
+        {navItems.map(item => (
+          <button
+            key={item.id}
+            onClick={() => setCurrentView(item.id as View)}
+            className="block w-full text-left px-4 py-2 rounded bg-slate-800 hover:bg-slate-700"
+          >
+            {item.label}
+          </button>
+        ))}
+        <button onClick={handleLogout} className="text-rose-400">
+          Sair
+        </button>
+      </aside>
 
-      <div className="flex">
-        <main className="flex-1 px-6 py-8">
-          {renderView()}
-        </main>
-      </div>
+      <main className="flex-1 p-8">
+        {renderView()}
+      </main>
 
       {isAssetModalOpen && (
-        <AssetForm 
+        <AssetForm
           initialData={prefilledAsset}
-          onClose={() => {
-            setIsAssetModalOpen(false);
-            setPrefilledAsset(undefined);
-          }} 
-          onSave={handleSaveAsset} 
+          onClose={() => setIsAssetModalOpen(false)}
+          onSave={handleSaveAsset}
         />
       )}
     </div>

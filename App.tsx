@@ -21,7 +21,13 @@ import {
 } from 'lucide-react';
 import { Asset, FinancialGoal, AllocationGoals } from './types';
 
-type View = 'dashboard' | 'investments' | 'simulator' | 'goals' | 'reports' | 'settings';
+type View =
+  | 'dashboard'
+  | 'investments'
+  | 'simulator'
+  | 'goals'
+  | 'reports'
+  | 'settings';
 
 interface UserData {
   name: string;
@@ -47,9 +53,8 @@ const App: React.FC = () => {
   });
 
   const [isAssetModalOpen, setIsAssetModalOpen] = useState(false);
-  const [prefilledAsset, setPrefilledAsset] = useState<Partial<Asset> | undefined>(
-    undefined
-  );
+  const [prefilledAsset, setPrefilledAsset] =
+    useState<Partial<Asset> | undefined>(undefined);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -127,23 +132,34 @@ const App: React.FC = () => {
   // =========================
   // SALVAR ATIVO NO SUPABASE
   // =========================
-  const handleSaveAsset = async (asset: Asset) => {
+  const handleSaveAsset = async (asset: any) => {
     if (!supabase || !session?.user) return;
 
     const payload = {
       user_id: session.user.id,
       name: asset.name,
       type: asset.type,
-      category: asset.subtype ?? null,
+      category: asset.category ?? asset.subtype ?? null,
 
-      invested_amount: Number(asset.investedAmount) || null,
-      current_value: Number(asset.investedAmount) || null,
+      invested_amount: Number(asset.invested_amount) || null,
+      current_value:
+        Number(asset.current_value) ||
+        Number(asset.invested_amount) ||
+        null,
 
-      annual_rate: Number(asset.yieldRate) || null,
-      dividend_yield: Number(asset.dividendYield) || null,
+      annual_rate:
+        asset.annual_rate !== null && asset.annual_rate !== undefined
+          ? Number(asset.annual_rate)
+          : null,
 
-      allocation_date: asset.allocationDate || null,
-      maturity_date: asset.maturityDate || null,
+      dividend_yield:
+        asset.dividend_yield !== null &&
+        asset.dividend_yield !== undefined
+          ? Number(asset.dividend_yield)
+          : null,
+
+      allocation_date: asset.allocation_date || null,
+      maturity_date: asset.maturity_date || null,
 
       notes: asset.notes || null
     };
@@ -204,7 +220,13 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (currentView) {
       case 'dashboard':
-        return <Dashboard assets={assets} goals={goals} privacyMode={privacyMode} />;
+        return (
+          <Dashboard
+            assets={assets}
+            goals={goals}
+            privacyMode={privacyMode}
+          />
+        );
       case 'investments':
         return (
           <Investments
@@ -239,7 +261,13 @@ const App: React.FC = () => {
           />
         );
       default:
-        return <Dashboard assets={assets} goals={goals} privacyMode={privacyMode} />;
+        return (
+          <Dashboard
+            assets={assets}
+            goals={goals}
+            privacyMode={privacyMode}
+          />
+        );
     }
   };
 
